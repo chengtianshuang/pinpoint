@@ -45,7 +45,7 @@ public class LoggingRejectedExecutionHandler implements RejectedExecutionHandler
     public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
         final long error = rejectedCount.incrementAndGet();
         if ((error % logRate) == 0) {
-            logger.warn("RejectedExecutionCount={}", error);
+            logger.warn("RejectedExecutionCount={} queue_size={}", error,executor.getQueue().size());
         }
     }
 }

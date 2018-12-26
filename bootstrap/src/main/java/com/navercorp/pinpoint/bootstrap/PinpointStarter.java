@@ -23,8 +23,10 @@ import com.navercorp.pinpoint.bootstrap.config.ProfilerConfig;
 import com.navercorp.pinpoint.common.Version;
 import com.navercorp.pinpoint.common.util.PinpointThreadFactory;
 import com.navercorp.pinpoint.common.util.SimpleProperty;
+import com.navercorp.pinpoint.common.util.StringUtils;
 import com.navercorp.pinpoint.common.util.SystemProperty;
 
+import java.io.File;
 import java.lang.instrument.Instrumentation;
 import java.net.URL;
 import java.security.AccessController;
@@ -35,7 +37,6 @@ import java.util.Map;
 
 /**
  * @author Jongho Moon
- *
  */
 class PinpointStarter {
 
@@ -84,37 +85,43 @@ class PinpointStarter {
 
 
     boolean start() {
-        final IdValidator idValidator = new IdValidator();
-        final String agentId = idValidator.getAgentId();
-        if (agentId == null) {
-            return false;
-        }
-        final String applicationName = idValidator.getApplicationName();
-        if (applicationName == null) {
-            return false;
-        }
+
 
         final ContainerResolver containerResolver = new ContainerResolver();
         final boolean isContainer = containerResolver.isContainer();
 
-        List<String> pluginJars = agentDirectory.getPlugins();
-        String configPath = getConfigPath(agentDirectory);
+        List<String> pluginJars = agentDirectory.getPlugins();//
+        String configPath = getConfigPath(agentDirectory);//todo 得到config文件
         if (configPath == null) {
             return false;
         }
 
         // set the path of log file as a system property
-        saveLogFilePath(agentDirectory);
+        saveLogFilePath(agentDirectory);//todo 设置日志保存地址
 
         savePinpointVersion();
 
         try {
             // Is it right to load the configuration in the bootstrap?
-            ProfilerConfig profilerConfig = DefaultProfilerConfig.load(configPath);
+            ProfilerConfig profilerConfig = DefaultProfilerConfig.load(configPath); //todo 加载配置文件中的配置到环境变量
+
+            final IdValidator idValidator = new IdValidator();
+
+            String applicationName = idValidator.getApplicationName(profilerConfig);
+            if (applicationName == null || applicationName.isEmpty()) {
+                logger.warn("applicationName not define");
+                return false;
+            }
+
+            final String agentId = idValidator.getAgentId(applicationName);
+            if (agentId == null) {
+                return false;
+            }
+
 
             // this is the library list that must be loaded
             final URL[] urls = resolveLib(agentDirectory);
-            final ClassLoader agentClassLoader = createClassLoader("pinpoint.agent", urls, parentClassLoader);
+            final ClassLoader agentClassLoader = createClassLoader("pinpoint.agent", urls, parentClassLoader);//
             if (moduleBootLoader != null) {
                 this.logger.info("defineAgentModule");
                 moduleBootLoader.defineAgentModule(agentClassLoader, urls);
@@ -122,8 +129,8 @@ class PinpointStarter {
 
             final String bootClass = getBootClass();
             AgentBootLoader agentBootLoader = new AgentBootLoader(bootClass, urls, agentClassLoader);
-            logger.info("pinpoint agent [" + bootClass + "] starting...");
-
+            logger.info("pinpoint agent [" + bootClass + "] starting...");//todo 真正的启动类 bootclass=com.navercorp.pinpoint.profiler.DefaultAgent
+            //todo 得到一个AgentOption对象，包含了instrument对象、启动bootstrap的jar包地址plugin的jar包地址，总之所有的我们配置的数据这里面都有
             AgentOption option = createAgentOption(agentId, applicationName, isContainer, profilerConfig, instrumentation, pluginJars, agentDirectory);
             Agent pinpointAgent = agentBootLoader.boot(option);
             pinpointAgent.start();
@@ -166,12 +173,12 @@ class PinpointStarter {
 
     }
 
-    private AgentOption createAgentOption(String agentId, String applicationName, boolean isContainer,
+    private AgentOption createAgentOption(final String agentId, final String applicationName, boolean isContainer,
                                           ProfilerConfig profilerConfig,
                                           Instrumentation instrumentation,
                                           List<String> pluginJars,
                                           AgentDirectory agentDirectory) {
-        List<String> bootstrapJarPaths = agentDirectory.getBootDir().toList();
+        List<String> bootstrapJarPaths = agentDirectory.getBootDir().toList();//todo 得到boot文件夹下的jar
         return new DefaultAgentOption(instrumentation, agentId, applicationName, isContainer, profilerConfig, pluginJars, bootstrapJarPaths);
     }
 
@@ -213,13 +220,53 @@ class PinpointStarter {
             return pinpointConfigFormSystemProperty;
         }
 
-        String classPathAgentConfigPath = agentDirectory.getAgentConfigPath();
+        String classPathAgentConfigPath;
+        if (!StringUtils.isEmpty(System.getProperty("isLocal"))) {
+            classPathAgentConfigPath = agentDirectory.getAgentConfigPath();
+        } else {
+            //针对七鱼做的特殊改造，将配置置于项目中，启动时根据当前的执行路径向上找1个父节点以后，再向下遍历，直到找到名为pinpoint.config的文件为止
+            classPathAgentConfigPath = searchPinpointConfig();
+        }
+
         if (classPathAgentConfigPath != null) {
             logger.info("classpath " + configName + " found. " + classPathAgentConfigPath);
             return classPathAgentConfigPath;
         }
 
         logger.info(configName + " file not found.");
+        return null;
+    }
+
+    private String searchPinpointConfig() {
+
+        File userDir = new File(System.getProperty("user.dir"));
+
+        File pinpoingConfig = dfsPinpointConfig(userDir.getParentFile());
+        return pinpoingConfig == null ? null : pinpoingConfig.getAbsolutePath();
+    }
+
+    private static File dfsPinpointConfig(File file) {
+        final String configName = ProductInfo.NAME + ".config";
+
+        if (file == null)
+            return null;
+
+        if (file.isFile()) {
+            if (file.getName().equals(configName))
+                return file;
+            else
+                return null;
+        }
+
+        File[] childs = file.listFiles();
+        if (childs == null)
+            return null;
+
+        for (File child : childs) {
+            File pinpointConfig = dfsPinpointConfig(child);
+            if (pinpointConfig != null)
+                return pinpointConfig;
+        }
         return null;
     }
 

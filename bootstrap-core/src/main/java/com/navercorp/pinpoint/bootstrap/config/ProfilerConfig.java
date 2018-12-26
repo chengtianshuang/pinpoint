@@ -27,6 +27,8 @@ import java.util.Map;
  */
 public interface ProfilerConfig {
 
+    String getApplicationName();
+
     int getInterceptorRegistrySize();
 
     String getCollectorSpanServerIp();

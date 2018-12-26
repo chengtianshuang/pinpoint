@@ -19,39 +19,40 @@
     </appender>
 
     <logger name="com.navercorp.pinpoint" additivity="false">
-        <level value="INFO"/>
+        <level value="DEBUG"/>
         <appender-ref ref="console"/>
     </logger>
 
     <logger name="com.navercorp.pinpoint.cluster.route.filter" additivity="false">
-        <level value="WARN"/>
+        <level value="DEBUG"/>
         <appender-ref ref="console"/>
     </logger>
 
     <logger name="com.navercorp.pinpoint.collector.handler" additivity="false">
-        <level value="WARN"/>
+        <level value="DEBUG"/>
         <appender-ref ref="console"/>
     </logger>
 
     <logger name="org.apache.zookeeper" additivity="false">
-        <level value="WARN"/>
+        <level value="DEBUG"/>
         <appender-ref ref="console"/>
     </logger>
 
     <logger name="org.apache.hadoop.hbase" additivity="false">
-        <level value="WARN"/>
+        <level value="DEBUG"/>
         <appender-ref ref="console"/>
     </logger>
 
     <logger name="com.navercorp.pinpoint.collector.StateReport" additivity="false">
         <!-- disable : WARN -->
-        <level value="INFO"/>
+        <level value="DEBUG"/>
         <appender-ref ref="stat-appender"/>
         <!--<appender-ref ref="console"/>-->
     </logger>
 
     <root>
-        <level value="WARN"/>
+        <level value="DEBUG"/>
         <appender-ref ref="console"/>
+        <appender-ref ref="stat-appender"/>
     </root>
 </log4j:configuration>

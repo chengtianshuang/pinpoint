@@ -202,6 +202,11 @@ public class DefaultProfilerConfig implements ProfilerConfig {
     }
 
     @Override
+    public String getApplicationName() {
+        return properties.getProperty("pinpoint.applicationName");
+    }
+
+    @Override
     public int getInterceptorRegistrySize() {
         return interceptorRegistrySize;
     }

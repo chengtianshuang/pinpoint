@@ -107,7 +107,7 @@ public class AgentInfoSender {
         public void start() {
             final SuccessListener successListener = new SuccessListener() {
                 @Override
-                public void onSuccess() {
+                public void onSuccess() {//todo 这里发送消息
                     schedule(this, maxTryPerAttempt, refreshIntervalMs, sendIntervalMs);
                 }
             };

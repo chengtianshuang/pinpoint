@@ -49,6 +49,7 @@
 
 
     <build>
+        <finalName>pinpoint-bootstrap</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

@@ -106,3 +106,19 @@ function isCanvasSupported(){
   var elem = document.createElement('canvas');
   return !!(elem.getContext && elem.getContext('2d'));
 }
+
+
+function qy_searchBytransaction() {
+    var transactionId = document.getElementById('qy_searchBytransactionId_val').value;
+
+    var arr = transactionId.split('^');
+
+    console.log('hx_arr', JSON.stringify(arr));
+
+    var agentId = arr[0];
+
+    var nowTimeStamp = Date.parse(new Date());
+
+    window.open('#/transactionView/' + agentId + '/' + transactionId + '/' + nowTimeStamp + '/' + -1);
+
+};
